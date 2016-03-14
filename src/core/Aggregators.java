@@ -53,6 +53,14 @@ public final class Aggregators {
   public static final Aggregator AVG = new Avg(
       Interpolation.LERP, "avg");
 
+  /** Aggregator that skips aggregation/interpolation and/or downsampling. */
+  public static final Aggregator NONE = new None(Interpolation.ZIM, "raw");
+  
+  /** Return the product of two time series 
+   * @since 2.3 */
+  public static final Aggregator MULTIPLY = new Multiply(
+      Interpolation.LERP, "multiply");
+  
   /** Aggregator that returns the Standard Deviation of the data points. */
   public static final Aggregator DEV = new StdDev(
       Interpolation.LERP, "dev");
@@ -139,6 +147,8 @@ public final class Aggregators {
     aggregators.put("min", MIN);
     aggregators.put("max", MAX);
     aggregators.put("avg", AVG);
+    aggregators.put("none", NONE);
+    aggregators.put("mult", MULTIPLY);
     aggregators.put("dev", DEV);
     aggregators.put("count", COUNT);
     aggregators.put("zimsum", ZIMSUM);
@@ -314,6 +324,62 @@ public final class Aggregators {
   }
 
   /**
+   * An aggregator that isn't meant for aggregation. Paradoxical!!
+   * Really it's used as a flag to indicate that, during sorting and iteration,
+   * that the pipeline should not perform any aggregation and should emit 
+   * raw time series.
+   */
+  private static final class None extends Aggregator {
+    public None(final Interpolation method, final String name) {
+      super(method, name);
+    }
+    
+    @Override
+    public long runLong(final Longs values) {
+      final long v = values.nextLongValue();
+      if (values.hasNextValue()) {
+        throw new IllegalDataException("More than one value in aggregator " + values);
+      }
+      return v;
+    }
+    
+    @Override
+    public double runDouble(final Doubles values) {
+      final double v = values.nextDoubleValue();
+      if (values.hasNextValue()) {
+        throw new IllegalDataException("More than one value in aggregator " + values);
+      }
+      return v;
+    }
+  }
+  
+  private static final class Multiply extends Aggregator {
+    
+    public Multiply(final Interpolation method, final String name) {
+      super(method, name);
+    }
+
+    @Override
+    public long runLong(Longs values) {
+      long result = values.nextLongValue();
+      while (values.hasNextValue()) {
+        result *= values.nextLongValue();
+      }
+      return result;
+    }
+
+    @Override
+    public double runDouble(Doubles values) {
+      double result = values.nextDoubleValue();
+      while (values.hasNextValue()) {
+        result *= values.nextDoubleValue();
+      }
+      return result;
+    }
+    
+  }
+  
+  /**
    * Standard Deviation aggregator.
    * Can compute without storing all of the data points in memory at the same
    * time.  This implementation is based upon a
@@ -486,4 +552,5 @@ public final class Aggregators {
     }
 
   }
+
 }

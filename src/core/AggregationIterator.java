@@ -115,7 +115,7 @@ import org.slf4j.LoggerFactory;
  * to a special, really large value (too large to be a valid timestamp).
  * <p>
  */
-final class AggregationIterator implements SeekableView, DataPoint,
+public class AggregationIterator implements SeekableView, DataPoint,
                                            Aggregator.Longs, Aggregator.Doubles {
 
   private static final Logger LOG =
@@ -278,6 +278,55 @@ final class AggregationIterator implements SeekableView, DataPoint,
   }
 
   /**
+   * Creates a new iterator for a {@link SpanGroup}.
+   * @param spans Spans in a group.
+   * @param start_time Any data point strictly before this timestamp will be
+   * ignored.
+   * @param end_time Any data point strictly after this timestamp will be
+   * ignored.
+   * @param aggregator The aggregation function to use.
+   * @param method Interpolation method to use when aggregating time series
+   * @param downsampler The downsampling specifier to use (cannot be null)
+   * @param query_start Start of the actual query
+   * @param query_end End of the actual query
+   * @param rate If {@code true}, the rate of the series will be used instead
+   * of the actual values.
+   * @param rate_options Specifies the optional additional rate calculation
+   * options.
+   * @return an AggregationIterator
+   * @since 2.3
+   */
+  public static AggregationIterator create(final List<Span> spans,
+      final long start_time,
+      final long end_time,
+      final Aggregator aggregator,
+      final Interpolation method,
+      final DownsamplingSpecification downsampler,
+      final long query_start,
+      final long query_end,
+      final boolean rate,
+      final RateOptions rate_options) {
+    final int size = spans.size();
+    final SeekableView[] iterators = new SeekableView[size];
+    for (int i = 0; i < size; i++) {
+      SeekableView it;
+      if (downsampler == null || 
+          downsampler == DownsamplingSpecification.NO_DOWNSAMPLER) {
+        it = spans.get(i).spanIterator();
+      } else {
+        it = spans.get(i).downsampler(start_time, end_time, downsampler, 
+            query_start, query_end);
+      }
+      if (rate) {
+        it = new RateSpan(it, rate_options);
+      }
+      iterators[i] = it;
+    }
+    return new AggregationIterator(iterators, start_time, end_time, aggregator,
+    method, rate);  
+  }
+  
+  /**
    * Creates an aggregation iterator for a group of data point iterators.
    * @param iterators An array of Seekable views of spans in a group. Ignored
    * if {@code null}. We modify the array while processing data points.
@@ -290,7 +339,7 @@ final class AggregationIterator implements SeekableView, DataPoint,
    * @param rate If {@code true}, the rate of the series will be used instead
    * of the actual values.
    */
-  private AggregationIterator(final SeekableView[] iterators,
+  public AggregationIterator(final SeekableView[] iterators,
                               final long start_time,
                               final long end_time,
                               final Aggregator aggregator,
