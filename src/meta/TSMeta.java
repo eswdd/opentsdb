@@ -77,7 +77,7 @@ public final class TSMeta {
   private static final Charset CHARSET = Charset.forName("ISO-8859-1");
   
   /** The single column family used by this class. */
-  private static final byte[] FAMILY = "name".getBytes(CHARSET);
+  public static final byte[] FAMILY = "name".getBytes(CHARSET);
   
   /** The cell qualifier to use for timeseries meta */
   private static final byte[] META_QUALIFIER = "ts_meta".getBytes(CHARSET);
@@ -525,7 +525,6 @@ public final class TSMeta {
       @Override
       public Deferred<Long> call(final Long incremented_value) 
         throws Exception {
-        LOG.debug("Value: " + incremented_value);
         if (incremented_value > 1) {
           // TODO - maybe update the search index every X number of increments?
           // Otherwise the search engine would only get last_updated/count 
