@@ -229,8 +229,8 @@ public final class TSDB {
     ExpressionFactory.addTSDBFunctions(this);
     
 
-    putlatency = LatencyStats.getInstance(config, "hbase_put");
-    scanlatency = LatencyStats.getInstance(config, "hbase_scan");
+    putlatency = LatencyStats.getInstance(config, "hbase_put", "hbase.latency", "method=put");
+    scanlatency = LatencyStats.getInstance(config, "hbase_scan", "hbase.latency", "method=scan");
 
     LOG.debug(config.dumpConfiguration());
   }
@@ -570,14 +570,14 @@ public final class TSDB {
 
     collector.addExtraTag("class", "IncomingDataPoints");
     try {
-      putlatency.collectStats(collector, "hbase.latency", "method=put");
+      putlatency.collectStats(collector);
     } finally {
       collector.clearExtraTag("class");
     }
 
     collector.addExtraTag("class", "TsdbQuery");
     try {
-      scanlatency.collectStats(collector, "hbase.latency", "method=scan");
+      scanlatency.collectStats(collector);
     } finally {
       collector.clearExtraTag("class");
     }
