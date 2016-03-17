@@ -84,10 +84,11 @@ public final class PipelineFactory implements ChannelPipelineFactory {
    */
   public PipelineFactory(final TSDB tsdb, final RpcManager manager) {
     this.tsdb = tsdb;
-    this.socketTimeout = tsdb.getConfig().getInt("tsd.core.socket.timeout");
+    socketTimeout = tsdb.getConfig().getInt("tsd.core.socket.timeout");
     timer = tsdb.getTimer();
-    this.timeoutHandler = new IdleStateHandler(timer, 0, 0, this.socketTimeout);
-    this.rpchandler = new RpcHandler(tsdb, manager);
+    timeoutHandler = new IdleStateHandler(timer, 0, 0, this.socketTimeout);
+    rpchandler = new RpcHandler(tsdb, manager);
+    manager.setRpcHandler(rpchandler);
     try {
       HttpQuery.initializeSerializerMaps(tsdb);
     } catch (RuntimeException e) {
